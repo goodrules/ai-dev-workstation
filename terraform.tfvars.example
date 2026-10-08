@@ -1,0 +1,49 @@
+# ==============================================================================
+# GCP Cloud Workstations Configuration Example
+# Copy this file to terraform.tfvars and customize with your own settings.
+# ==============================================================================
+
+# GCP Project and Region Settings
+project_id = "my-gcp-project-id"
+region     = "us-central1"
+
+# Workstation Identifiers (must match ^[a-z][a-z0-9-]{0,62}$)
+cluster_id     = "dev-cluster"
+config_id      = "dev-config"
+workstation_id = "my-workstation"
+
+# Workstation User IAM Binding (user email to grant roles/workstations.user)
+user_email = "developer@example.com"
+
+# Resource Creation Toggles
+# Set to true to create a new cluster/config, or false to attach to existing ones
+create_cluster = false
+create_config  = false
+
+# Network Settings (used when create_cluster = true)
+# Accepts either short name ("default") or fully-qualified resource URI
+network    = "default"
+subnetwork = "default"
+
+# Network Security & Private Cluster Settings (used when create_cluster = true)
+enable_private_endpoint = false
+# allowed_projects        = ["my-consumer-project-123"]
+
+# Host Compute & Storage Specs
+machine_type            = "n4-standard-8"
+persistent_disk_size_gb = 200
+persistent_disk_type    = "pd-balanced"
+quick_start_pool_size   = 1
+
+# Timeout Settings
+idle_timeout    = "7200s"
+running_timeout = "43200s"
+
+# Container Image
+container_image = "us-central1-docker.pkg.dev/cloud-workstations-images/predefined/code-oss:latest"
+
+# Resource Labels
+labels = {
+  environment = "development"
+  managed-by  = "terraform"
+}

@@ -1,0 +1,133 @@
+# 🚀 Cloud Workstation Developer Environment
+
+Welcome to your Google Cloud Workstation developer environment! This workstation is provisioned with modern language runtimes, AI-assisted developer toolchains, and Google Cloud integrations.
+
+---
+
+> [!WARNING]
+> ### ⚠️ Persistent Directory Notice (Persistent vs. Ephemeral Storage)
+>
+> - **Only `/home/user` survives workstation stop/start cycles**: All data, configurations, and toolchains installed under `/home/user` (such as `~/.local/bin`, `~/.nvm`, `~/sdk/go`, `~/go`, `~/.bashrc`, and your workspace repositories) are preserved across workstation restarts.
+> - **`/` (Root Filesystem) is ephemeral**: The root filesystem resets to the container image on restart. Any modifications outside of `/home/user` (including packages installed via `sudo apt-get` or edits to `/usr`, `/etc`, or `/var`) are **wiped** on workstation stop/start.
+> - **Golden Rule**: Always install language runtimes, tools, CLI utilities, and project files inside user-space under `/home/user/`.
+
+---
+
+## 🛠️ Toolchain Status & Path Table
+
+All toolchains are installed in user-space and configured in your persistent `~/.bashrc`:
+
+| Toolchain | Binary / Command | Persistent Installation Path | Verification Command | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Antigravity CLI** | `agy` | `/home/user/.local/bin/agy` | `agy --version` | Installed |
+| **Claude Code CLI** | `claude` | `/home/user/.nvm/versions/node/{{NODE_VERSION}}/bin/claude`<br>`/home/user/.local/bin/claude` | `claude --version` | Installed |
+| **Python** | `python3.14`<br>`uv` | `/home/user/.local/bin/uv`<br>`/home/user/.local/bin/python3.14` | `python3.14 --version`<br>`uv --version` | Installed ({{PYTHON_VERSION}}) |
+| **Go SDK** | `go`<br>`gofmt` | `GOROOT`: `/home/user/sdk/go`<br>`GOPATH`: `/home/user/go`<br>Binaries: `/home/user/sdk/go/bin/go`, `/home/user/.local/bin/go` | `go version` | Installed ({{GO_VERSION}}) |
+| **Node.js & npm** | `node`<br>`npm`<br>`nvm` | `NVM_DIR`: `/home/user/.nvm`<br>Node: `/home/user/.nvm/versions/node/{{NODE_VERSION}}/bin` | `node -v`<br>`npm -v` | Installed (Node {{NODE_VERSION}}) |
+
+---
+
+## 🔐 Authentication Setup Guide
+
+Before launching AI coding agents or GCP workflows, configure the relevant credentials:
+
+### 1. Antigravity CLI (`agy`)
+To authenticate with Google Antigravity, trigger the OAuth device authorization flow:
+```bash
+agy auth login
+```
+To verify existing session status:
+```bash
+agy auth status
+```
+
+### 2. Claude Code CLI (`claude`)
+Claude Code supports direct Anthropic API keys or native Google Cloud Vertex AI mode:
+
+#### Option A: Anthropic API Key
+```bash
+export ANTHROPIC_API_KEY="sk-ant-api03-..."
+```
+*(Tip: Add to `~/.bashrc` to preserve across terminal sessions).*
+
+#### Option B: Google Cloud Vertex AI Mode (Recommended on GCP)
+Run Claude Code with your workstation's GCP project credentials:
+```bash
+export CLAUDE_CODE_USE_VERTEX=1
+export CLOUD_ML_REGION="us-central1"
+export ANTHROPIC_VERTEX_PROJECT_ID="{{GCP_PROJECT_ID}}"
+```
+
+### 3. Google Cloud Authentication & Quota Project
+Your workstation environment is pre-configured with:
+- **Default Project**: `{{GCP_PROJECT_ID}}`
+- **User Principal**: `{{USER_EMAIL}}`
+- **Quota Project**: `{{GCP_PROJECT_ID}}`
+- **Compute Region**: `{{REGION}}`
+
+#### Application Default Credentials (ADC)
+If provisioned via `setup.sh`, your local ADC credentials and quota project were synchronized into `/home/user/.config/gcloud/application_default_credentials.json`.
+Verify access token generation:
+```bash
+gcloud auth application-default print-access-token
+```
+
+#### Interactive Terminal Login (`gcloud` CLI)
+To authenticate the `gcloud` CLI tool itself inside the workstation container:
+```bash
+gcloud auth login --no-launch-browser
+```
+
+#### Re-synchronizing or Updating Quota Project
+```bash
+gcloud config set project {{GCP_PROJECT_ID}}
+gcloud auth application-default set-quota-project {{GCP_PROJECT_ID}}
+```
+
+---
+
+## 💻 Helpful Commands, Ports & Aliases
+
+### Quick Commands Reference
+
+```bash
+# Python & UV
+uv venv                       # Create a virtual environment with Python 3.14
+uv pip install <package>      # High-speed package installation via uv
+uv run python script.py       # Run script with project environment
+
+# Node & NVM
+nvm ls                        # List installed Node versions
+nvm install --lts             # Install or upgrade Node LTS
+nvm use --lts                 # Activate LTS version
+
+# Go Toolchain
+go version                    # Display Go version
+go env GOROOT GOPATH          # Inspect Go environment paths
+go install <package>@latest   # Install tool into ~/go/bin (on PATH)
+
+# AI Agents
+claude                        # Start interactive Claude Code assistant
+agy --help                    # View Antigravity CLI commands
+```
+
+### Port Forwarding & Web Previews
+To connect to web applications (e.g., local development servers on port 8080 or 3000) from your local computer:
+```bash
+# Run on your local machine:
+gcloud workstations ssh {{WORKSTATION_ID}} \
+  --cluster={{CLUSTER_ID}} \
+  --config={{CONFIG_ID}} \
+  --region={{REGION}} \
+  -- -L 8080:localhost:8080 -L 3000:localhost:3000
+```
+
+### Shell Aliases (Configured in `~/.bashrc`)
+- `ll`: Detailed directory listing (`ls -laF`)
+- `gs`: Quick git status check (`git status`)
+- `motd`: Display this welcome and onboarding guide (`cat /home/user/WELCOME.md`)
+
+---
+
+*Environment initialized on: {{BOOTSTRAP_DATE}}*  
+*Target user: {{USER}}*
