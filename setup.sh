@@ -116,6 +116,7 @@ CLI_USER_EMAIL="${USER_EMAIL:-}"
 CLI_CLUSTER_ID="${CLUSTER_ID:-}"
 CLI_CONFIG_ID="${CONFIG_ID:-}"
 CLI_WORKSTATION_ID="${WORKSTATION_ID:-}"
+CLI_MACHINE_TYPE="${MACHINE_TYPE:-n2-standard-8}"
 
 print_usage() {
   cat <<EOF
@@ -132,6 +133,7 @@ Options:
   -c, --cluster <cluster_id>    Target workstation cluster ID
       --config <config_id>      Target workstation config ID
   -w, --workstation <id>        Target workstation ID
+  -m, --machine-type <type>     Compute Engine machine type (default: n2-standard-8)
   -h, --help                    Show this help message and exit
 
 Environment Variables:
@@ -141,6 +143,7 @@ Environment Variables:
   CLUSTER_ID                    Target workstation cluster ID
   CONFIG_ID                     Target workstation config ID
   WORKSTATION_ID                Target workstation ID
+  MACHINE_TYPE                  Compute Engine machine type (default: n2-standard-8)
   NON_INTERACTIVE               Run non-interactively if set to 1 or true
   DRY_RUN                       Simulate actions if set to 1 or true
   NO_COLOR                      Disable colored ANSI output
@@ -212,6 +215,14 @@ while [ $# -gt 0 ]; do
       ;;
     --workstation=*)
       CLI_WORKSTATION_ID="${1#*=}"
+      shift
+      ;;
+    --machine-type|-m)
+      CLI_MACHINE_TYPE="$2"
+      shift 2
+      ;;
+    --machine-type=*)
+      CLI_MACHINE_TYPE="${1#*=}"
       shift
       ;;
     --help|-h)
@@ -627,11 +638,12 @@ log_success "Target Cluster resolved: ${CLUSTER_ID} (create_cluster=${CREATE_CLU
 # ------------------------------------------------------------------------------
 # 9. Configuration Discovery & Selection
 # ------------------------------------------------------------------------------
+TARGET_MACHINE_TYPE="${CLI_MACHINE_TYPE:-n2-standard-8}"
 CONFIG_ID=""
 CREATE_CONFIG=false
 
 if [ "${CREATE_CLUSTER}" = "true" ]; then
-  log_info "New cluster '${CLUSTER_ID}' will be created; creating new workstation configuration with n4-standard-8 specs."
+  log_info "New cluster '${CLUSTER_ID}' will be created; creating new workstation configuration with ${TARGET_MACHINE_TYPE} specs."
   CREATE_CONFIG=true
   if [ -n "${CLI_CONFIG_ID}" ]; then
     CONFIG_ID="${CLI_CONFIG_ID}"
@@ -671,7 +683,7 @@ else
       CONFIG_ID="ws-config"
       log_step "Non-interactive: creating new configuration '${CONFIG_ID}'."
     else
-      CONFIG_ID="$(prompt_valid_id "Enter configuration ID to create with high-performance n4-standard-8 specs" "ws-config")"
+      CONFIG_ID="$(prompt_valid_id "Enter configuration ID to create with high-performance ${TARGET_MACHINE_TYPE} specs" "ws-config")"
     fi
   elif [ ${#configs[@]} -eq 1 ]; then
     FOUND_CONFIG="${configs[0]}"
@@ -686,7 +698,7 @@ else
         CREATE_CONFIG=false
       else
         CREATE_CONFIG=true
-        CONFIG_ID="$(prompt_valid_id "Enter new configuration ID to create with high-performance n4-standard-8 specs" "ws-config")"
+        CONFIG_ID="$(prompt_valid_id "Enter new configuration ID to create with high-performance ${TARGET_MACHINE_TYPE} specs" "ws-config")"
       fi
     fi
   else
@@ -695,7 +707,7 @@ else
     for ((i = 0; i < ${#configs[@]}; i++)); do
       printf "    [%d] %s\n" "$((i + 1))" "${configs[i]}"
     done
-    printf "    [%d] Create new configuration (n4-standard-8)...\n" "${NEW_CONFIG_OPT}"
+    printf "    [%d] Create new configuration (${TARGET_MACHINE_TYPE})...\n" "${NEW_CONFIG_OPT}"
 
     if [ "$NON_INTERACTIVE" = "true" ]; then
       CONFIG_ID="${configs[0]}"
@@ -709,7 +721,7 @@ else
         if [[ "${choice}" =~ ^[0-9]+$ ]] && [ "${choice}" -ge 1 ] && [ "${choice}" -le "${NEW_CONFIG_OPT}" ]; then
           if [ "${choice}" -eq "${NEW_CONFIG_OPT}" ]; then
             CREATE_CONFIG=true
-            CONFIG_ID="$(prompt_valid_id "Enter new configuration ID to create with high-performance n4-standard-8 specs" "ws-config")"
+            CONFIG_ID="$(prompt_valid_id "Enter new configuration ID to create with high-performance ${TARGET_MACHINE_TYPE} specs" "ws-config")"
           else
             CREATE_CONFIG=false
             CONFIG_ID="${configs[$((choice - 1))]}"
@@ -763,7 +775,7 @@ printf "%b======================================================================
 printf "  %bProject ID:%b           %s\n" "${BOLD}" "${RESET}" "${PROJECT_ID}"
 printf "  %bRegion:%b               %s\n" "${BOLD}" "${RESET}" "${REGION}"
 printf "  %bCluster ID:%b           %s (%s)\n" "${BOLD}" "${RESET}" "${CLUSTER_ID}" "$([ "$CREATE_CLUSTER" = "true" ] && echo "create new" || echo "attach to existing")"
-printf "  %bConfig ID:%b            %s (%s)\n" "${BOLD}" "${RESET}" "${CONFIG_ID}" "$([ "$CREATE_CONFIG" = "true" ] && echo "create new (n4-standard-8, 200GB pd-balanced)" || echo "attach to existing")"
+printf "  %bConfig ID:%b            %s (%s)\n" "${BOLD}" "${RESET}" "${CONFIG_ID}" "$([ "$CREATE_CONFIG" = "true" ] && echo "create new (${TARGET_MACHINE_TYPE}, 200GB pd-balanced)" || echo "attach to existing")"
 printf "  %bWorkstation ID:%b       %s\n" "${BOLD}" "${RESET}" "${WORKSTATION_ID}"
 printf "  %bIAM User Email:%b       %s (roles/workstations.user)\n" "${BOLD}" "${RESET}" "${USER_EMAIL}"
 printf "  %bExecution Mode:%b       %s\n" "${BOLD}" "${RESET}" "$([ "$DRY_RUN" = "true" ] && echo "DRY-RUN (Simulated actions)" || echo "LIVE PROVISIONING")"
@@ -815,7 +827,7 @@ network    = "default"
 subnetwork = "default"
 
 # Host Compute & Storage Specs
-machine_type            = "n4-standard-8"
+machine_type            = "${TARGET_MACHINE_TYPE}"
 persistent_disk_size_gb = 200
 persistent_disk_type    = "pd-balanced"
 quick_start_pool_size   = 1

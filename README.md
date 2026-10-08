@@ -62,7 +62,7 @@ An enterprise-grade, fully automated infrastructure-as-code and bootstrap orches
 Google Cloud Workstations provides managed, containerized developer workspaces running on Google Compute Engine virtual machine hosts. However, out-of-the-box base images discard container filesystem modifications on workstation stop/start cycles.
 
 This solution solves this operational hurdle by orchestrating a **two-tier deployment**:
-1. **Infrastructure Plane (Terraform)**: Declaratively provisions or discovers workstation clusters, workstation configurations (`n4-standard-8`, 200GB `pd-balanced` home volume, quick-start pool 1, idle timeout 2h), workstation instances, and granular IAM bindings (`roles/workstations.user`).
+1. **Infrastructure Plane (Terraform)**: Declaratively provisions or discovers workstation clusters, workstation configurations (`n2-standard-8`, 200GB `pd-balanced` home volume, quick-start pool 1, idle timeout 2h), workstation instances, and granular IAM bindings (`roles/workstations.user`). Modern machine series (such as N4, C3, C4, A3) requiring Hyperdisk Balanced High Availability are dynamically supported.
 2. **User-Space Runtime Plane (`workstation-init.sh`)**: Once the instance reaches `STATE_RUNNING`, the orchestrator tunnels over `gcloud workstations ssh` to provision modern developer runtimes directly into `/home/user` (`~/.local/bin`, `~/.nvm`, `~/sdk/go`, `~/go`). This guarantees **100% persistent toolchains** across VM restarts without requiring `sudo` privileges or custom golden container image pipelines.
 
 ### Architecture Sequence Flow
@@ -146,7 +146,7 @@ sequenceDiagram
 |  INFRASTRUCTURE PROVISIONING (Terraform)                                              |
 |  - Dynamic terraform.tfvars synthesized & backed up                                   |
 |  - terraform init && terraform apply -auto-approve                                    |
-|  - Cloud Workstations Cluster + Config (n4-standard-8, 200GB pd-balanced) + IAM Role  |
+|  - Cloud Workstations Cluster + Config (n2-standard-8, 200GB pd-balanced) + IAM Role  |
 +---------------------------------------------------------------------------------------+
                                            |
                                            v
@@ -280,7 +280,7 @@ When launched without `--non-interactive`, `setup.sh` executes an intelligent di
    - **Multiple Clusters Found**: Renders a numbered selection menu with an additional option to create a new cluster.
 4. **Configuration Discovery**:
    - If attaching to an existing cluster, queries configurations via `gcloud workstations configs list`.
-   - Renders a selection menu or prompts to create a new configuration with `n4-standard-8` specifications.
+   - Renders a selection menu or prompts to create a new configuration with `n2-standard-8` specifications.
 5. **Workstation Naming & IAM Derivation**:
    - Derives a compliant workstation ID from the developer's email address by stripping domain, converting special characters to hyphens, prefixing `ws-`, and enforcing the 63-character RFC-1035 limit (e.g., `john.doe@company.com` &rarr; `ws-john-doe`).
 6. **Plan Confirmation**: Displays a formatted Deployment Configuration Summary and requests explicit confirmation before proceeding.
@@ -298,7 +298,7 @@ For headless provisioning in onboarding scripts or CI/CD pipelines, supply `-n` 
   --region="us-central1" \
   --email="developer@company.com" \
   --cluster="corp-cluster" \
-  --config="corp-n4-standard-8" \
+  --config="corp-n2-standard-8" \
   --workstation="ws-developer"
 ```
 
@@ -352,7 +352,7 @@ In dry-run mode:
 | `subnetwork` | `string` | VPC subnetwork name or resource URI to use if `create_cluster` is true. | `"default"` | Optional | Accepts short name (`"default"`) or full URI (`projects/...`). Automatically normalized. |
 | `enable_private_endpoint` | `bool` | Whether to enable private endpoint for the workstation cluster (disables public internet ingress). | `false` | Optional | Boolean toggle. |
 | `allowed_projects` | `list(string)` | List of additional project IDs or project numbers allowed to attach to the workstation cluster's service attachment when `enable_private_endpoint` is true. | `null` | Optional | List of GCP project identifiers. |
-| `machine_type` | `string` | The Compute Engine machine type for the workstation host. | `"n4-standard-8"` | Optional | Valid Compute Engine machine type identifier. |
+| `machine_type` | `string` | The Compute Engine machine type for the workstation host. For N2/E2/N1, Regional Persistent Disk is used; for N4/C3/C4/A3, Hyperdisk Balanced HA is automatically selected. | `"n2-standard-8"` | Optional | Valid Compute Engine machine type identifier. |
 | `persistent_disk_size_gb` | `number` | The size of the persistent disk in GB mounted to `/home`. | `200` | Optional | `var.persistent_disk_size_gb > 10` |
 | `persistent_disk_type` | `string` | The type of persistent disk for home directory storage (`pd-standard`, `pd-balanced`, `pd-ssd`). | `"pd-balanced"` | Optional | Valid Compute Engine persistent disk type. |
 | `quick_start_pool_size` | `number` | Number of pre-warmed virtual machine instances to keep idle in a pool for faster workstation startup. | `1` | Optional | `var.quick_start_pool_size >= 0` |
@@ -402,7 +402,7 @@ network    = "default"
 subnetwork = "default"
 
 # Sizing & Specs
-machine_type            = "n4-standard-8"
+machine_type            = "n2-standard-8"
 persistent_disk_size_gb = 200
 persistent_disk_type    = "pd-balanced"
 quick_start_pool_size   = 1
@@ -609,7 +609,7 @@ Cloud Workstations are optimized to provide developer performance while controll
 +---------------------------------------------------------------------------------------+
 |                              RESOURCE SIZING & COST CONTROL                           |
 +---------------------------------------------------------------------------------------+
-|  Host Machine Type:     n4-standard-8 (8 vCPUs, 32 GB RAM, 5th Gen Intel Xeon)        |
+|  Host Machine Type:     n2-standard-8 (8 vCPUs, 32 GB RAM, 2nd Gen Intel Xeon Scalable) |
 |  Persistent Home Disk:  200 GB pd-balanced (IOPS & throughput balanced for builds)    |
 |  Idle Shutdown:         7200s (2 Hours of inactivity -> automatic suspension)         |
 |  Max Execution Time:    43200s (12 Hours maximum running duration ceiling)            |
@@ -619,9 +619,11 @@ Cloud Workstations are optimized to provide developer performance while controll
 
 ### Enterprise Governance & Cost Details
 
-1. **`n4-standard-8` (8 vCPU, 32 GB RAM)**:
-   - Built on 5th Gen Intel Xeon (Emerald Rapids).
-   - Provides optimal multi-threaded compilation performance for Go, Rust, and TypeScript/Node workspaces while reducing vCPU cost by up to 15% compared to N2/N1 equivalents.
+1. **`n2-standard-8` (8 vCPU, 32 GB RAM)**:
+   - Built on Intel Xeon Scalable processors (Cascade Lake / Ice Lake).
+   - Broadest regional and zonal availability across Google Cloud with native support for Regional Persistent Disks (`pd-balanced`).
+   - Optimal multi-threaded compilation performance for Go, Rust, and TypeScript/Node workspaces with support for nested virtualization.
+   - *Note*: If configuring newer machine families (e.g. `n4-standard-8`, `c3-standard-8`), the Terraform module dynamically provisions **Hyperdisk Balanced High Availability** (`gce_hd`) storage automatically.
 2. **200GB `pd-balanced` Home Storage**:
    - Offers SSD-like performance (up to 6,000 IOPS and 240 MB/s) at approximately half the cost of `pd-ssd`.
    - Provides ample headroom for virtual environments, Docker caches, Go build caches, and large language models.
@@ -810,7 +812,7 @@ If `setup.sh` or `gcloud workstations start` times out after 300 seconds waiting
      --format="table(timestamp,severity,textPayload,jsonPayload.message)"
    ```
 3. **Check Compute Engine Quotas**:
-   Cloud Workstation clusters with quick-start pools (`pool_size = 1`) require available GCE vCPU quota in the selected region (e.g., 8 vCPUs for `n4-standard-8` plus host pool overhead). Verify regional quota:
+   Cloud Workstation clusters with quick-start pools (`pool_size = 1`) require available GCE vCPU quota in the selected region (e.g., 8 vCPUs for `n2-standard-8` plus host pool overhead). Verify regional quota:
    ```bash
    gcloud compute regions describe <region> \
      --format="table(quotas.metric,quotas.limit,quotas.usage)" | grep -E "CPUS|DISKS_TOTAL_GB"

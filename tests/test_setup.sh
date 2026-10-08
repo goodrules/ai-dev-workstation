@@ -206,6 +206,14 @@ test_host_credential_sync_check() {
   grep -q 'Skipping Application Default Credentials sync to prevent credential leakage' "${SETUP_SCRIPT}"
 }
 
+# 21. Machine Type CLI flag override in dry-run
+test_machine_type_override() {
+  local output
+  output="$("${SETUP_SCRIPT}" --dry-run --non-interactive \
+    --machine-type n2-standard-16)"
+  echo "${output}" | grep -q 'machine_type            = "n2-standard-16"'
+}
+
 echo "========================================================================"
 echo " Running Automated Test Suite for setup.sh"
 echo "========================================================================"
@@ -230,6 +238,7 @@ run_test "17. Workstation bootstrap syntax (bash & zsh)" test_workstation_init_s
 run_test "18. Hardened TLS 1.2 protocol in curl installers" test_hardened_curl_protocols
 run_test "19. Decoupled curl installer pipelines (no curl | bash)" test_no_direct_curl_pipes
 run_test "20. Host credential sync security verification" test_host_credential_sync_check
+run_test "21. Machine type flag override in dry-run" test_machine_type_override
 
 echo "========================================================================"
 echo " Test Results: ${PASSED_TESTS} Passed, ${FAILED_TESTS} Failed"

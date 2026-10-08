@@ -8,6 +8,10 @@ locals {
   # Dynamic resolution of cluster and config IDs based on creation toggles
   cluster_id = var.create_cluster ? google_workstations_workstation_cluster.default[0].workstation_cluster_id : var.cluster_id
   config_id  = var.create_config ? google_workstations_workstation_config.default[0].workstation_config_id : var.config_id
+
+  # Determine if Hyperdisk Balanced High Availability should be used instead of regional Persistent Disk.
+  # Machine types such as N4, C3, C4, A3 require Hyperdisk Balanced High Availability.
+  is_hyperdisk = var.persistent_disk_type == "hyperdisk-balanced-ha" || can(regex("^(n4|c3|c4|a3)-", var.machine_type))
 }
 
 resource "google_workstations_workstation_cluster" "default" {
@@ -48,10 +52,21 @@ resource "google_workstations_workstation_config" "default" {
   persistent_directories {
     mount_path = "/home"
 
-    gce_pd {
-      size_gb        = var.persistent_disk_size_gb
-      disk_type      = var.persistent_disk_type
-      reclaim_policy = "DELETE"
+    dynamic "gce_pd" {
+      for_each = local.is_hyperdisk ? [] : [1]
+      content {
+        size_gb        = var.persistent_disk_size_gb
+        disk_type      = var.persistent_disk_type
+        reclaim_policy = "DELETE"
+      }
+    }
+
+    dynamic "gce_hd" {
+      for_each = local.is_hyperdisk ? [1] : []
+      content {
+        size_gb        = var.persistent_disk_size_gb
+        reclaim_policy = "DELETE"
+      }
     }
   }
 

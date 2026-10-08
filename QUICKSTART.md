@@ -2,7 +2,7 @@
 
 Get up and running with a production-grade, AI-powered cloud developer workstation in **under 3 minutes**.
 
-This quickstart guides you through provisioning a Google Cloud Workstation equipped with **Claude Code**, **Google Antigravity CLI**, **Python 3.14 via uv**, **Node.js LTS**, and **Go 1.24+** on an `n4-standard-8` (8 vCPU, 32 GB RAM) instance.
+This quickstart guides you through provisioning a Google Cloud Workstation equipped with **Claude Code**, **Google Antigravity CLI**, **Python 3.14 via uv**, **Node.js LTS**, and **Go 1.24+** on an `n2-standard-8` (8 vCPU, 32 GB RAM) instance.
 
 ---
 

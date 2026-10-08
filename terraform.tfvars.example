@@ -30,7 +30,7 @@ enable_private_endpoint = false
 # allowed_projects        = ["my-consumer-project-123"]
 
 # Host Compute & Storage Specs
-machine_type            = "n4-standard-8"
+machine_type            = "n2-standard-8"
 persistent_disk_size_gb = 200
 persistent_disk_type    = "pd-balanced"
 quick_start_pool_size   = 1

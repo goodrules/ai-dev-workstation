@@ -91,9 +91,9 @@ variable "allowed_projects" {
 }
 
 variable "machine_type" {
-  description = "The Compute Engine machine type for the workstation host."
+  description = "The Compute Engine machine type for the workstation host (e.g. n2-standard-8, n2-standard-16, n4-standard-8). If an N4, C3, C4, or A3 machine type is chosen, Hyperdisk Balanced High Availability is automatically used; for N2, E2, N1, and others, Regional Persistent Disk (pd-balanced) is used."
   type        = string
-  default     = "n4-standard-8"
+  default     = "n2-standard-8"
 }
 
 variable "persistent_disk_size_gb" {
