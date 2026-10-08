@@ -10,7 +10,6 @@ This quickstart guides you through provisioning a Google Cloud Workstation equip
 
 Select either **Google Cloud Shell** (zero local installation required) or your **Local Terminal**.
 
-````carousel
 ### Track 1: Google Cloud Shell (Recommended — Zero Local Setup)
 
 Google Cloud Shell provides a browser-based terminal with `gcloud`, `terraform`, and active GCP credentials pre-installed.
@@ -23,7 +22,7 @@ Google Cloud Shell provides a browser-based terminal with `gcloud`, `terraform`,
 
 2. **Clone the Repository**:
    ```bash
-   git clone https://github.com/your-org/ai-dev-workstation.git
+   git clone https://github.com/goodrules/ai-dev-workstation.git
    cd ai-dev-workstation
    ```
 
@@ -32,7 +31,9 @@ Google Cloud Shell provides a browser-based terminal with `gcloud`, `terraform`,
    ./setup.sh -n
    ```
    *(Flags: `-n` runs non-interactively using your active Cloud Shell project and authenticated email).*
-<!-- slide -->
+
+---
+
 ### Track 2: Local Terminal (macOS & Linux)
 
 For developers deploying directly from their personal laptops or desktop environments.
@@ -54,12 +55,11 @@ For developers deploying directly from their personal laptops or desktop environ
 
 3. **Clone & Execute Interactive Setup**:
    ```bash
-   git clone https://github.com/your-org/ai-dev-workstation.git
+   git clone https://github.com/goodrules/ai-dev-workstation.git
    cd ai-dev-workstation
    ./setup.sh
    ```
    *(Follow the interactive discovery prompts to select or create a cluster and configuration).*
-````
 
 ---
 
